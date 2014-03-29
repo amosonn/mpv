@@ -497,6 +497,7 @@ static bool resize(struct priv *p)
     p->dst_w = p->dst.x1 - p->dst.x0;
     p->dst_h = p->dst.y1 - p->dst.y0;
 
+
     MP_DBG(wl, "resizing %dx%d -> %dx%d\n", wl->window.width,
                                             wl->window.height,
                                             p->dst_w,

@@ -23,19 +23,11 @@
 
 static void egl_resize(struct vo_wayland_state *wl)
 {
-    int32_t width = 0;
-    int32_t height = 0;
+    const int32_t width = wl->window.sh_width;
+    const int32_t height = wl->window.sh_height;
 
-    wl->vo->dwidth = wl->window.sh_width;
-    wl->vo->dheight = wl->window.sh_height;
-    wl->vo->dx = 0;
-    wl->vo->dy = 0;
-
-    struct mp_rect src, dst;
-    struct mp_osd_res osd;
-    vo_get_src_dst_rects(wl->vo, &src, &dst, &osd);
-    width = dst.x1 - dst.x0;
-    height= dst.y1 - dst.y0;
+    wl->vo->dwidth = width;
+    wl->vo->dheight = height;
 
     MP_VERBOSE(wl, "resizing %dx%d -> %dx%d\n", wl->window.width,
                                                 wl->window.height,

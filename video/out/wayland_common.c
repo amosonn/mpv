@@ -41,6 +41,7 @@
 #include "vo.h"
 #include "win_state.h"
 #include "osdep/timer.h"
+#include "sub/osd.h"
 
 #include "input/input.h"
 #include "input/event.h"
@@ -685,9 +686,15 @@ static void shedule_resize(struct vo_wayland_state *wl,
                            int32_t height)
 {
     MP_DBG(wl, "shedule resize: %dx%d\n", width, height);
+    wl->vo->dwidth = width;
+    wl->vo->dheight = height;
+    struct mp_rect src, dst;
+    struct mp_osd_res osd;
+    vo_get_src_dst_rects(wl->vo, &src, &dst, &osd);
 
-    wl->window.sh_width = width;
-    wl->window.sh_height = height;
+
+    wl->window.sh_width = dst.x1 - dst.x0;
+    wl->window.sh_height = dst.y1 - dst.y0;
     wl->window.events |= VO_EVENT_RESIZE;
 }
 
