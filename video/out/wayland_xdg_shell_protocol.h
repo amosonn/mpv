@@ -227,7 +227,7 @@ enum xdg_surface_state {
  * @change_state: compositor wants to change a surface's state
  * @activated: surface was activated
  * @deactivated: surface was deactivated
- * @delete: surface wants to be closed
+ * @close: surface wants to be closed
  *
  * An interface that may be implemented by a wl_surface, for
  * implementations that provide a desktop-style user interface.
@@ -303,9 +303,9 @@ struct xdg_surface_listener {
 	void (*deactivated)(void *data,
 			    struct xdg_surface *xdg_surface);
 	/**
-	 * delete - surface wants to be closed
+	 * close - surface wants to be closed
 	 *
-	 * The delete event is sent by the compositor when the user wants
+	 * The close event is sent by the compositor when the user wants
 	 * the surface to be closed. This should be equivalent to the user
 	 * clicking the close button in client-side decorations, if your
 	 * application has any...
@@ -314,8 +314,8 @@ struct xdg_surface_listener {
 	 * window. The client may choose to ignore this request, or show a
 	 * dialog to ask the user to save their data...
 	 */
-	void (*delete)(void *data,
-		       struct xdg_surface *xdg_surface);
+	void (*close)(void *data,
+		      struct xdg_surface *xdg_surface);
 };
 
 static inline int

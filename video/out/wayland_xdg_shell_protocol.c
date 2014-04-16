@@ -30,19 +30,11 @@
 #include <stdint.h>
 #include "wayland-util.h"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wredundant-decls"
-extern const struct wl_interface xdg_surface_interface;
+extern const struct wl_interface wl_output_interface;
+extern const struct wl_interface wl_seat_interface;
 extern const struct wl_interface wl_surface_interface;
 extern const struct wl_interface xdg_popup_interface;
-extern const struct wl_interface wl_surface_interface;
-extern const struct wl_interface wl_surface_interface;
-extern const struct wl_interface wl_seat_interface;
-extern const struct wl_interface wl_surface_interface;
-extern const struct wl_interface wl_seat_interface;
-extern const struct wl_interface wl_seat_interface;
-extern const struct wl_interface wl_output_interface;
-#pragma GCC diagnostic pop
+extern const struct wl_interface xdg_surface_interface;
 
 static const struct wl_interface *types[] = {
 	NULL,
@@ -104,7 +96,7 @@ static const struct wl_message xdg_surface_events[] = {
 	{ "change_state", "uuu", types + 0 },
 	{ "activated", "", types + 0 },
 	{ "deactivated", "", types + 0 },
-	{ "delete", "", types + 0 },
+	{ "close", "", types + 0 },
 };
 
 WL_EXPORT const struct wl_interface xdg_surface_interface = {

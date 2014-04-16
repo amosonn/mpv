@@ -165,7 +165,7 @@ static void xdg_handle_deactivated(void *data, struct xdg_surface *surface)
     wl->window.has_focus = false;
 }
 
-static void xdg_handle_delete(void *data, struct xdg_surface *surface)
+static void xdg_handle_close(void *data, struct xdg_surface *surface)
 {
     struct vo_wayland_state *wl = data;
     mp_input_put_key(wl->vo->input_ctx, MP_KEY_CLOSE_WIN);
@@ -176,7 +176,7 @@ const struct xdg_surface_listener xdg_surface_listener = {
     xdg_handle_change_state,
     xdg_handle_activated,
     xdg_handle_deactivated,
-    xdg_handle_delete,
+    xdg_handle_close,
 };
 
 static void output_handle_geometry(void *data,
