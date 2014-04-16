@@ -152,8 +152,6 @@ struct priv {
     int width;  // width of the original image
     int height;
 
-    int x, y; // coords for resizing
-
     // this id tells us if the subtitle part has changed or not
     int bitmap_pos_id[MAX_OSD_PARTS];
 
@@ -597,9 +595,6 @@ static void frame_handle_redraw(void *data,
         }
         p->attached_buffer = buf;
         buffer_finalise_front(buf);
-
-        p->x = 0;
-        p->y = 0;
     }
     else {
         if (callback)
