@@ -407,17 +407,6 @@ static int init_lpcm(struct ao *ao, AudioStreamBasicDescription asbd)
     CHECK_CA_ERROR_L(coreaudio_error_audiounit,
                      "can't link audio unit to selected device");
 
-    AudioChannelLayout acl;
-    if (ca_layout_from_mp_chmap(ao, ao->channels, &acl)) {;
-        MP_VERBOSE(ao, "setting channel layout on audio unit\n");
-        err = AudioUnitSetProperty(p->audio_unit,
-                                   kAudioUnitProperty_AudioChannelLayout,
-                                   kAudioUnitScope_Input, 0, &acl,
-                                   sizeof(AudioChannelLayout));
-        CHECK_CA_ERROR_L(coreaudio_error_audiounit,
-                         "can't set channel layout bitmap into audio unit");
-    }
-
     p->buffer = mp_ring_new(p, get_ring_size(ao));
     print_buffer(ao, p->buffer);
 

@@ -80,7 +80,4 @@ bool ca_change_format(struct ao *ao, AudioStreamID stream,
 bool ca_layout_to_mp_chmap(struct ao *ao, AudioChannelLayout *layout,
                            struct mp_chmap *chmap);
 
-bool ca_layout_from_mp_chmap(struct ao *ao, struct mp_chmap chmap,
-                             AudioChannelLayout *layout);
-
 #endif /* MPV_COREAUDIO_UTILS_H */
