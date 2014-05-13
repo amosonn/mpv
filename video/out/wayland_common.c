@@ -126,43 +126,30 @@ static const struct xdg_shell_listener shell_listener = {
 static void xdg_handle_configure(void *data,
                                  struct xdg_surface *surface,
                                  int32_t width,
-                                 int32_t height)
+                                 int32_t height,
+                                 struct wl_array *states,
+                                 uint32_t serial)
 {
     struct vo_wayland_state *wl = data;
-    shedule_resize(wl, width, height);
-}
+    if (width > 0 && height > 0)
+        shedule_resize(wl, width, height);
 
-static void xdg_handle_change_state(void *data,
-                                    struct xdg_surface *surface,
-                                    uint32_t state,
-                                    uint32_t value,
-                                    uint32_t serial)
-{
-    struct vo_wayland_state *wl = data;
-    switch (state) {
-        case XDG_SURFACE_STATE_MAXIMIZED:
-            break;
-        case XDG_SURFACE_STATE_FULLSCREEN:
-            wl->window.is_fullscreen = !!value;
-            break;
-        default:
-            break;
+    enum xdg_surface_state *state;
+    wl_array_for_each(state, states) {
+        switch (*state) {
+            case XDG_SURFACE_STATE_MAXIMIZED:
+                break;
+            case XDG_SURFACE_STATE_FULLSCREEN:
+                wl->window.is_fullscreen = true;
+                break;
+            case XDG_SURFACE_STATE_RESIZING:
+            case XDG_SURFACE_STATE_ACTIVATED:
+            default:
+                // No need to deal with them now
+                break;
+        }
     }
-    xdg_surface_ack_change_state(surface, state, value, serial);
-    // compositor invoked fullscreen request
-}
-
-
-static void xdg_handle_activated(void *data, struct xdg_surface *surface)
-{
-    struct vo_wayland_state *wl = data;
-    wl->window.has_focus = true;
-}
-
-static void xdg_handle_deactivated(void *data, struct xdg_surface *surface)
-{
-    struct vo_wayland_state *wl = data;
-    wl->window.has_focus = false;
+    xdg_surface_ack_configure(wl->window.xdg_surface, serial);
 }
 
 static void xdg_handle_close(void *data, struct xdg_surface *surface)
@@ -173,9 +160,6 @@ static void xdg_handle_close(void *data, struct xdg_surface *surface)
 
 const struct xdg_surface_listener xdg_surface_listener = {
     xdg_handle_configure,
-    xdg_handle_change_state,
-    xdg_handle_activated,
-    xdg_handle_deactivated,
     xdg_handle_close,
 };
 
@@ -692,7 +676,6 @@ static void shedule_resize(struct vo_wayland_state *wl,
     struct mp_osd_res osd;
     vo_get_src_dst_rects(wl->vo, &src, &dst, &osd);
 
-
     wl->window.sh_width = dst.x1 - dst.x0;
     wl->window.sh_height = dst.y1 - dst.y0;
     wl->window.events |= VO_EVENT_RESIZE;
@@ -907,9 +890,7 @@ static void vo_wayland_ontop (struct vo *vo)
     struct vo_wayland_state *wl = vo->wayland;
     MP_DBG(wl, "going ontop\n");
     vo->opts->ontop = 1;
-    xdg_surface_request_change_state(wl->window.xdg_surface,
-                                     XDG_SURFACE_STATE_FULLSCREEN,
-                                     false, 0);
+    xdg_surface_unset_fullscreen(wl->window.xdg_surface);
     shedule_resize(wl, wl->window.width, wl->window.height);
 }
 
@@ -936,17 +917,14 @@ static void vo_wayland_fullscreen (struct vo *vo)
         wl->window.is_fullscreen = true;
         wl->window.p_width = wl->window.width;
         wl->window.p_height = wl->window.height;
-        xdg_surface_request_change_state(wl->window.xdg_surface,
-                                         XDG_SURFACE_STATE_FULLSCREEN,
-                                         true, 0);
+        xdg_surface_set_fullscreen(wl->window.xdg_surface,
+                                   wl->display.fs_output);
     }
 
     else {
         MP_DBG(wl, "leaving fullscreen\n");
         wl->window.is_fullscreen = false;
-        xdg_surface_request_change_state(wl->window.xdg_surface,
-                                         XDG_SURFACE_STATE_FULLSCREEN,
-                                         false, 0);
+        xdg_surface_unset_fullscreen(wl->window.xdg_surface);
         shedule_resize(wl, wl->window.p_width, wl->window.p_height);
     }
 }
@@ -1096,8 +1074,6 @@ static void vo_wayland_update_screeninfo(struct vo *vo, struct mp_rect *screenrc
 
     wl->window.fs_width = screenrc->x1;
     wl->window.fs_height = screenrc->y1;
-
-    xdg_surface_set_output(wl->window.xdg_surface, wl->display.fs_output);
 }
 
 int vo_wayland_control (struct vo *vo, int *events, int request, void *arg)

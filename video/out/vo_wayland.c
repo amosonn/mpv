@@ -553,7 +553,6 @@ static bool resize(struct priv *p)
     return true;
 }
 
-
 /* wayland listeners */
 
 

@@ -79,30 +79,29 @@ WL_EXPORT const struct wl_interface xdg_shell_interface = {
 
 static const struct wl_message xdg_surface_requests[] = {
 	{ "destroy", "", types + 0 },
-	{ "set_transient_for", "?o", types + 14 },
+	{ "set_parent", "?o", types + 14 },
 	{ "set_margin", "iiii", types + 0 },
 	{ "set_title", "s", types + 0 },
 	{ "set_app_id", "s", types + 0 },
 	{ "move", "ou", types + 15 },
 	{ "resize", "ouu", types + 17 },
-	{ "set_output", "?o", types + 20 },
-	{ "request_change_state", "uuu", types + 0 },
-	{ "ack_change_state", "uuu", types + 0 },
+	{ "ack_configure", "u", types + 0 },
+	{ "set_maximized", "", types + 0 },
+	{ "unset_maximized", "", types + 0 },
+	{ "set_fullscreen", "?o", types + 20 },
+	{ "unset_fullscreen", "", types + 0 },
 	{ "set_minimized", "", types + 0 },
 };
 
 static const struct wl_message xdg_surface_events[] = {
-	{ "configure", "ii", types + 0 },
-	{ "change_state", "uuu", types + 0 },
-	{ "activated", "", types + 0 },
-	{ "deactivated", "", types + 0 },
+	{ "configure", "iiau", types + 0 },
 	{ "close", "", types + 0 },
 };
 
 WL_EXPORT const struct wl_interface xdg_surface_interface = {
 	"xdg_surface", 1,
-	11, xdg_surface_requests,
-	5, xdg_surface_events,
+	13, xdg_surface_requests,
+	2, xdg_surface_events,
 };
 
 static const struct wl_message xdg_popup_requests[] = {

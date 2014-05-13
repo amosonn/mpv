@@ -195,6 +195,8 @@ enum xdg_surface_resize_edge {
  * xdg_surface_state - types of state on the surface
  * @XDG_SURFACE_STATE_MAXIMIZED: the surface is maximized
  * @XDG_SURFACE_STATE_FULLSCREEN: the surface is fullscreen
+ * @XDG_SURFACE_STATE_RESIZING: (none)
+ * @XDG_SURFACE_STATE_ACTIVATED: (none)
  *
  * The different state values used on the surface. This is designed for
  * state values like maximized, fullscreen. It is paired with the
@@ -218,15 +220,14 @@ enum xdg_surface_resize_edge {
 enum xdg_surface_state {
 	XDG_SURFACE_STATE_MAXIMIZED = 1,
 	XDG_SURFACE_STATE_FULLSCREEN = 2,
+	XDG_SURFACE_STATE_RESIZING = 3,
+	XDG_SURFACE_STATE_ACTIVATED = 4,
 };
 #endif /* XDG_SURFACE_STATE_ENUM */
 
 /**
  * xdg_surface - desktop-style metadata interface
- * @configure: suggest resize
- * @change_state: compositor wants to change a surface's state
- * @activated: surface was activated
- * @deactivated: surface was deactivated
+ * @configure: suggest a surface chnage
  * @close: surface wants to be closed
  *
  * An interface that may be implemented by a wl_surface, for
@@ -242,66 +243,33 @@ enum xdg_surface_state {
  */
 struct xdg_surface_listener {
 	/**
-	 * configure - suggest resize
+	 * configure - suggest a surface chnage
 	 * @width: (none)
 	 * @height: (none)
+	 * @states: (none)
+	 * @serial: (none)
 	 *
 	 * The configure event asks the client to resize its surface.
 	 *
-	 * The size is a hint, in the sense that the client is free to
-	 * ignore it if it doesn't resize, pick a smaller size (to satisfy
-	 * aspect ratio or resize in steps of NxM pixels).
+	 * The width and height arguments specify a hint to the window
+	 * about how its surface should be resized in surface local
+	 * coordinates. The states listed in the event specify how the
+	 * width/height arguments should be interpreted.
 	 *
-	 * The client is free to dismiss all but the last configure event
-	 * it received.
+	 * A client should arrange a new surface, and then send a
+	 * ack_configure request with the serial sent in this configure
+	 * event before attaching a new surface.
 	 *
-	 * The width and height arguments specify the size of the window in
-	 * surface local coordinates.
+	 * If the client receives multiple configure events before it can
+	 * respond to one, it is free to discard all but the last event it
+	 * received.
 	 */
 	void (*configure)(void *data,
 			  struct xdg_surface *xdg_surface,
 			  int32_t width,
-			  int32_t height);
-	/**
-	 * change_state - compositor wants to change a surface's state
-	 * @state_type: the state to set
-	 * @value: the value to change the state to
-	 * @serial: a serial for the compositor's own tracking
-	 *
-	 * This event tells the client to change a surface's state. The
-	 * client should respond with an ack_change_state request to the
-	 * compositor to guarantee that the compositor knows that the
-	 * client has seen it.
-	 */
-	void (*change_state)(void *data,
-			     struct xdg_surface *xdg_surface,
-			     uint32_t state_type,
-			     uint32_t value,
-			     uint32_t serial);
-	/**
-	 * activated - surface was activated
-	 *
-	 * The activated_set event is sent when this surface has been
-	 * activated, which means that the surface has user attention.
-	 * Window decorations should be updated accordingly. You should not
-	 * use this event for anything but the style of decorations you
-	 * display, use wl_keyboard.enter and wl_keyboard.leave for
-	 * determining keyboard focus.
-	 */
-	void (*activated)(void *data,
-			  struct xdg_surface *xdg_surface);
-	/**
-	 * deactivated - surface was deactivated
-	 *
-	 * The deactivate event is sent when this surface has been
-	 * deactivated, which means that the surface lost user attention.
-	 * Window decorations should be updated accordingly. You should not
-	 * use this event for anything but the style of decorations you
-	 * display, use wl_keyboard.enter and wl_keyboard.leave for
-	 * determining keyboard focus.
-	 */
-	void (*deactivated)(void *data,
-			    struct xdg_surface *xdg_surface);
+			  int32_t height,
+			  struct wl_array *states,
+			  uint32_t serial);
 	/**
 	 * close - surface wants to be closed
 	 *
@@ -327,16 +295,18 @@ xdg_surface_add_listener(struct xdg_surface *xdg_surface,
 }
 
 #define XDG_SURFACE_DESTROY	0
-#define XDG_SURFACE_SET_TRANSIENT_FOR	1
+#define XDG_SURFACE_SET_PARENT	1
 #define XDG_SURFACE_SET_MARGIN	2
 #define XDG_SURFACE_SET_TITLE	3
 #define XDG_SURFACE_SET_APP_ID	4
 #define XDG_SURFACE_MOVE	5
 #define XDG_SURFACE_RESIZE	6
-#define XDG_SURFACE_SET_OUTPUT	7
-#define XDG_SURFACE_REQUEST_CHANGE_STATE	8
-#define XDG_SURFACE_ACK_CHANGE_STATE	9
-#define XDG_SURFACE_SET_MINIMIZED	10
+#define XDG_SURFACE_ACK_CONFIGURE	7
+#define XDG_SURFACE_SET_MAXIMIZED	8
+#define XDG_SURFACE_UNSET_MAXIMIZED	9
+#define XDG_SURFACE_SET_FULLSCREEN	10
+#define XDG_SURFACE_UNSET_FULLSCREEN	11
+#define XDG_SURFACE_SET_MINIMIZED	12
 
 static inline void
 xdg_surface_set_user_data(struct xdg_surface *xdg_surface, void *user_data)
@@ -360,10 +330,10 @@ xdg_surface_destroy(struct xdg_surface *xdg_surface)
 }
 
 static inline void
-xdg_surface_set_transient_for(struct xdg_surface *xdg_surface, struct wl_surface *parent)
+xdg_surface_set_parent(struct xdg_surface *xdg_surface, struct wl_surface *parent)
 {
 	wl_proxy_marshal((struct wl_proxy *) xdg_surface,
-			 XDG_SURFACE_SET_TRANSIENT_FOR, parent);
+			 XDG_SURFACE_SET_PARENT, parent);
 }
 
 static inline void
@@ -402,24 +372,38 @@ xdg_surface_resize(struct xdg_surface *xdg_surface, struct wl_seat *seat, uint32
 }
 
 static inline void
-xdg_surface_set_output(struct xdg_surface *xdg_surface, struct wl_output *output)
+xdg_surface_ack_configure(struct xdg_surface *xdg_surface, uint32_t serial)
 {
 	wl_proxy_marshal((struct wl_proxy *) xdg_surface,
-			 XDG_SURFACE_SET_OUTPUT, output);
+			 XDG_SURFACE_ACK_CONFIGURE, serial);
 }
 
 static inline void
-xdg_surface_request_change_state(struct xdg_surface *xdg_surface, uint32_t state_type, uint32_t value, uint32_t serial)
+xdg_surface_set_maximized(struct xdg_surface *xdg_surface)
 {
 	wl_proxy_marshal((struct wl_proxy *) xdg_surface,
-			 XDG_SURFACE_REQUEST_CHANGE_STATE, state_type, value, serial);
+			 XDG_SURFACE_SET_MAXIMIZED);
 }
 
 static inline void
-xdg_surface_ack_change_state(struct xdg_surface *xdg_surface, uint32_t state_type, uint32_t value, uint32_t serial)
+xdg_surface_unset_maximized(struct xdg_surface *xdg_surface)
 {
 	wl_proxy_marshal((struct wl_proxy *) xdg_surface,
-			 XDG_SURFACE_ACK_CHANGE_STATE, state_type, value, serial);
+			 XDG_SURFACE_UNSET_MAXIMIZED);
+}
+
+static inline void
+xdg_surface_set_fullscreen(struct xdg_surface *xdg_surface, struct wl_output *output)
+{
+	wl_proxy_marshal((struct wl_proxy *) xdg_surface,
+			 XDG_SURFACE_SET_FULLSCREEN, output);
+}
+
+static inline void
+xdg_surface_unset_fullscreen(struct xdg_surface *xdg_surface)
+{
+	wl_proxy_marshal((struct wl_proxy *) xdg_surface,
+			 XDG_SURFACE_UNSET_FULLSCREEN);
 }
 
 static inline void
