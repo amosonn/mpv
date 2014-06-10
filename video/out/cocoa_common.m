@@ -360,7 +360,7 @@ static int create_gl_context(struct vo *vo, int gl3profile)
     GLint npix;
 
     err = CGLChoosePixelFormat(attrs, &pix, &npix);
-    if (err == kCGLBadAttribute) {
+    if (err == kCGLBadAttribute || pix == NULL) {
         // kCGLPFASupportsAutomaticGraphicsSwitching is probably not supported
         // by the current hardware. Falling back to not using it.
         MP_ERR(vo, "error creating CGL pixel format with automatic GPU "
